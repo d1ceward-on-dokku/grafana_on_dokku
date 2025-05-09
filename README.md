@@ -4,6 +4,8 @@
 [![Dokku](https://img.shields.io/badge/Dokku-Repo-blue.svg)](https://github.com/dokku/dokku)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/d1ceward-on-dokku/grafana_on_dokku/graphs/commit-activity)
 
+# Run Grafana on Dokku
+
 ## Overview
 
 This guide explains how to deploy [Grafana](https://grafana.com/), an open-source metrics dashboard and graph editor, on a [Dokku](http://dokku.viewdocs.io/dokku/) host. Dokku is a lightweight PaaS that simplifies deploying and managing applications using Docker.
