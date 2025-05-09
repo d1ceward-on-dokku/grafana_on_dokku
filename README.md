@@ -4,154 +4,163 @@
 [![Dokku](https://img.shields.io/badge/Dokku-Repo-blue.svg)](https://github.com/dokku/dokku)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/d1ceward-on-dokku/grafana_on_dokku/graphs/commit-activity)
 
-# Run Grafana on Dokku
+## Overview
 
-## Perquisites
+This guide explains how to deploy [Grafana](https://grafana.com/), an open-source metrics dashboard and graph editor, on a [Dokku](http://dokku.viewdocs.io/dokku/) host. Dokku is a lightweight PaaS that simplifies deploying and managing applications using Docker.
 
-### What is Grafana?
+## Prerequisites
 
-[Grafana](https://grafana.com/) is an open source, feature rich metrics dashboard and graph editor for
-Graphite, Elasticsearch, OpenTSDB, Prometheus and InfluxDB.
+Before proceeding, ensure you have the following:
 
-### What is Dokku?
+- A working [Dokku host](http://dokku.viewdocs.io/dokku/getting-started/installation/).
+- The [PostgreSQL plugin](https://github.com/dokku/dokku-postgres) installed on Dokku.
+- (Optional) The [Let's Encrypt plugin](https://github.com/dokku/dokku-letsencrypt) for SSL certificates.
 
-[Dokku](http://dokku.viewdocs.io/dokku/) is the smallest PaaS implementation
-you've ever seen - _Docker powered mini-Heroku_.
+## Setup Instructions
 
-### Requirements
+### 1. Create the App
 
-* A working [Dokku host](http://dokku.viewdocs.io/dokku/getting-started/installation/)
-* [PostgreSQL](https://github.com/dokku/dokku-postgres) plugin for Dokku
-* [Letsencrypt](https://github.com/dokku/dokku-letsencrypt) plugin for SSL (optionnal)
-
-# Setup
-
-**Note:** We are going to use the domain `grafana.example.com` for demonstration purposes. Make sure to
-replace it to your domain name.
-
-## App and plugins
-
-### Create the app
-
-Log onto your Dokku Host to create the Grafana app:
+Log into your Dokku host and create the `grafana` app:
 
 ```bash
 dokku apps:create grafana
 ```
 
-### Add plugins
-Install, create and link PostgreSQL plugin:
+### 2. Configure the App
 
-```bash
-# Install postgres plugin on Dokku
-dokku plugin:install https://github.com/dokku/dokku-postgres.git postgres
-```
+#### Install, Create, and Link PostgreSQL Plugin
 
-```bash
-# Create running plugin
-dokku postgres:create grafana
-```
+1. Install the PostgreSQL plugin:
 
-```bash
-# Link plugin to the main app
-dokku postgres:link grafana grafana
-```
+    ```bash
+    dokku plugin:install https://github.com/dokku/dokku-postgres.git postgres
+    ```
 
-## Configuration
+2. Create a PostgreSQL service:
 
-### Add GF_DATABASE_URL and GF_SERVER_HTTP_PORT to environement variables
+    ```bash
+    dokku postgres:create grafana
+    ```
 
-```bash
-# Show all enironement variables to copy content of DATABASE_URL variable
-dokku config grafana
-```
+3. Link the PostgreSQL service to the app:
 
-```bash
-# Set GF_DATABASE_URL
-dokku config:set grafana GF_DATABASE_URL='previously_copied_database_url'
-```
+    ```bash
+    dokku postgres:link grafana grafana
+    ```
 
-```bash
-# Set port to 5000
-dokku config:set grafana GF_SERVER_HTTP_PORT=5000
-```
+#### Set Environment Variables
 
-### Setting secret key
+1. Retrieve the `DATABASE_URL` from the app configuration:
 
-```bash
-dokku config:set grafana GF_SECURITY_SECRET_KEY=$(echo `openssl rand -base64 45` | tr -d \=+ | cut -c 1-32)
-```
+    ```bash
+    dokku config grafana
+    ```
 
-## Domain setup
+2. Set the `GF_DATABASE_URL` environment variable:
 
-To get the routing working, we need to apply a few settings. First we set the domain.
+    ```bash
+    dokku config:set grafana GF_DATABASE_URL='previously_copied_database_url'
+    ```
+
+3. Set the HTTP port for Grafana:
+
+    ```bash
+    dokku config:set grafana GF_SERVER_HTTP_PORT=5000
+    ```
+
+4. Generate and set a secret key for Grafana:
+
+    ```bash
+    dokku config:set grafana GF_SECURITY_SECRET_KEY=$(echo `openssl rand -base64 45` | tr -d \=+ | cut -c 1-32)
+    ```
+
+### 3. Configure the Domain and Ports
+
+Set the domain for your app to enable routing:
 
 ```bash
 dokku domains:set grafana grafana.example.com
 ```
 
-## Push Grafana to Dokku
-
-### Grabbing the repository
-
-First clone this repository onto your machine.
-
-#### Via SSH
+Map the internal port `5000` to the external port `80`:
 
 ```bash
-git clone git@github.com:d1ceward-on-dokku/grafana_on_dokku.git
+dokku ports:set grafana http:80:5000
 ```
 
-#### Via HTTPS
+### 4. Deploy the App
+
+You can deploy the app to your Dokku server using one of the following methods:
+
+#### Option 1: Deploy Using `dokku git:sync`
+
+If your repository is hosted on a remote Git server with an HTTPS URL, you can deploy the app directly to your Dokku server using `dokku git:sync`. This method also triggers a build process automatically. Run the following command:
 
 ```bash
-git clone https://github.com/d1ceward-on-dokku/grafana_on_dokku.git
+dokku git:sync --build grafana https://github.com/d1ceward-on-dokku/grafana_on_dokku.git
 ```
 
-### Set up git remote
+This will fetch the code from the specified repository, build the app, and deploy it to your Dokku server.
 
-Now you need to set up your Dokku server as a remote.
+#### Option 2: Clone the Repository and Push Manually
 
-```bash
-git remote add dokku dokku@example.com:grafana
-```
+If you prefer to work with the repository locally, you can clone it to your machine and push it to your Dokku server manually:
 
-### Push Grafana
+1. Clone the repository:
 
-Now we can push Grafana to Dokku (_before_ moving on to the [next part](#domain-and-ssl-certificate)).
+    ```bash
+    # Via HTTPS
+    git clone https://github.com/d1ceward-on-dokku/grafana_on_dokku.git
+    ```
 
-```bash
-git push dokku master
-```
+2. Add your Dokku server as a Git remote:
 
-## SSL certificate
+    ```bash
+    git remote add dokku dokku@example.com:grafana
+    ```
 
-Last but not least, we can go an grab the SSL certificate from [Let's Encrypt](https://letsencrypt.org/).
+3. Push the app to your Dokku server:
 
-```bash
-# Install letsencrypt plugin
-dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git
+    ```bash
+    git push dokku master
+    ```
 
-# Set certificate contact email
-dokku letsencrypt:set grafana email you@example.com
+Choose the method that best suits your workflow.
 
-# Generate certificate
-dokku letsencrypt:enable grafana
-```
+### 5. Enable SSL (Optional)
 
-In case of an error `Challenge validation has failed`, please check your proxy settings:
+Secure your app with an SSL certificate from Let's Encrypt:
 
-```bash
-dokku proxy:report                          # you should see http:80:5000
-dokku proxy:ports-add grafana http:80:5000  # otherwise, add the proxy to the port
-```
+1. Add the HTTPS port:
 
-## Wrapping up
+    ```bash
+    dokku ports:add grafana https:443:5000
+    ```
 
-Your Grafana instance should now be available on [https://grafana.example.com](https://grafana.example.com).
+2. Install the Let's Encrypt plugin:
+
+    ```bash
+    dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git
+    ```
+
+3. Set the contact email for Let's Encrypt:
+
+    ```bash
+    dokku letsencrypt:set grafana email you@example.com
+    ```
+
+4. Enable Let's Encrypt for the app:
+
+    ```bash
+    dokku letsencrypt:enable grafana
+    ```
+
+## Wrapping Up
+
+Congratulations! Your Grafana instance is now up and running. You can access it at [https://grafana.example.com](https://grafana.example.com).
 
 To add Grafana plugins, simply set the environment variable named `GF_INSTALL_PLUGINS`:
 
-```
+```bash
 dokku config:set grafana GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-github-datasource
 ```
