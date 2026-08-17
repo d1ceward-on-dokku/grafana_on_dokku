@@ -58,10 +58,23 @@ dokku apps:create grafana
     dokku config grafana
     ```
 
-2. Set the `GF_DATABASE_URL` environment variable:
+    The database URL should follow the format:
 
     ```bash
-    dokku config:set grafana GF_DATABASE_URL='previously_copied_database_url'
+    postgres://<DATABASE_USER>:<DATABASE_PASSWORD>@<DATABASE_HOST>:<DATABASE_PORT>/<DATABASE_NAME>
+    ```
+
+
+2. Set the `GF_DATABASE_*` environment variables:
+
+    ```bash
+    dokku config:set grafana \
+      GF_DATABASE_TYPE=postgres \
+      GF_DATABASE_URL='<DATABASE_URL>' \
+      GF_DATABASE_HOST='<DATABASE_HOST>:<DATABASE_PORT>' \
+      GF_DATABASE_NAME=<DATABASE_NAME> \
+      GF_DATABASE_USER=<DATABASE_USER> \
+      GF_DATABASE_PASSWORD=<DATABASE_PASSWORD>
     ```
 
 3. Set the HTTP port for Grafana:
